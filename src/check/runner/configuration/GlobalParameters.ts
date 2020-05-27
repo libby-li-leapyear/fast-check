@@ -3,7 +3,7 @@ import { Parameters } from './Parameters';
 
 const globalParametersSymbol = Symbol.for('fast-check/GlobalParameters');
 
-export type GlobalParameters = Pick<Parameters, Exclude<keyof Parameters, 'path' | 'examples'>>;
+export type GlobalParameters = Pick<Parameters, Exclude<keyof Parameters, 'path' | 'examples' | 'codeSnippetFor'>>;
 
 /**
  * Define global parameters that will be used by all the runners

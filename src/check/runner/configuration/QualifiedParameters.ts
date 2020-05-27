@@ -24,6 +24,7 @@ export class QualifiedParameters<T> {
   skipAllAfterTimeLimit: number | null;
   interruptAfterTimeLimit: number | null;
   markInterruptAsFailure: boolean;
+  codeSnippetFor?: (...generatedValues: T extends any[] ? T : any[]) => string;
 
   constructor(op?: Parameters<T>) {
     const p = op || {};
@@ -44,6 +45,7 @@ export class QualifiedParameters<T> {
     this.unbiased = QualifiedParameters.readBoolean(p, 'unbiased');
     this.examples = QualifiedParameters.readOrDefault(p, 'examples', []);
     this.endOnFailure = QualifiedParameters.readBoolean(p, 'endOnFailure');
+    this.codeSnippetFor = QualifiedParameters.readOrDefault(p, 'codeSnippetFor', undefined);
   }
 
   private static readSeed = <T>(p: Parameters<T>): number => {

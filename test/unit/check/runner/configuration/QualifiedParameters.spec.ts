@@ -24,7 +24,8 @@ const parametersArbitrary = fc.record(
     endOnFailure: fc.boolean(),
     skipAllAfterTimeLimit: fc.nat(),
     interruptAfterTimeLimit: fc.nat(),
-    markInterruptAsFailure: fc.boolean()
+    markInterruptAsFailure: fc.boolean(),
+    codeSnippetFor: fc.func(fc.string())
   },
   { withDeletedKeys: true }
 );

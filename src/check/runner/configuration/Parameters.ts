@@ -112,4 +112,14 @@ export interface Parameters<T = void> {
    * it replays only the minimal counterexample.
    */
   endOnFailure?: boolean;
+  /**
+   * Print a code snippet out of a set of inputs
+   *
+   * It might be useful if you want to provide the users of the tests with
+   * an easy copy-pastable snippet that can run in their favorite JavaScript environment.
+   *
+   * If provided and in case of failure, the function will be called to add a code snippet
+   * after the usual counterexample and description of the error.
+   */
+  codeSnippetFor?: (...generatedValues: T extends any[] ? T : any[]) => string;
 }

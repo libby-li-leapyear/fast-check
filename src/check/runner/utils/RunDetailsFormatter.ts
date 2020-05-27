@@ -3,6 +3,8 @@ import { VerbosityLevel } from '../configuration/VerbosityLevel';
 import { ExecutionStatus } from '../reporter/ExecutionStatus';
 import { ExecutionTree } from '../reporter/ExecutionTree';
 import { RunDetails } from '../reporter/RunDetails';
+import { IProperty } from '../../property/Property';
+import fc, { IAsyncProperty, Parameters } from '../../../fast-check';
 
 /** @hidden */
 function formatHints(hints: string[]): string {
@@ -111,6 +113,13 @@ function preFormatEarlyInterrupted<Ts>(out: RunDetails<Ts>) {
 function throwIfFailed<Ts>(out: RunDetails<Ts>) {
   if (!out.failed) return;
 
+  // TODO Either extract some kind of formatRunDetails: string | undefined
+  //      Or interpretRunDetails: {message, details, hint} | null
+  //      Or as we started codeSnippetFor... but will it be enough for future usages? Create a file onto the file system (async)...
+
+  // Then user could use something like https://codesandbox.io/s/wylx7lrrl7?file=/index.js:44-52
+  // Or https://codesandbox.io/docs/importing#get-request to push failures onto their codesandbox if they want to
+
   const { message, details, hints } =
     out.counterexample == null
       ? out.interrupted
@@ -125,3 +134,61 @@ function throwIfFailed<Ts>(out: RunDetails<Ts>) {
 }
 
 export { throwIfFailed };
+
+// Manually playground
+
+declare function fc_formatRunDetails<Ts>(out: RunDetails<Ts>): string | undefined;
+
+// formatRunDetails: string | undefined
+export async function customAssertA<Ts>(property: IAsyncProperty<Ts>, params?: Parameters<Ts>) {
+  const out = await fc.check(property, params);
+
+  if (!out.failed) return;
+
+  const genericErrorMessage = fc_formatRunDetails(out);
+  if (out.counterexample == null) throw new Error(genericErrorMessage);
+
+  throw new Error(`${genericErrorMessage}\n\n${'await callMethod(out.counterexample)'}`);
+}
+export function buildCustomAssertB<Ts extends any[]>(property: IAsyncProperty<Ts>, params?: Parameters<Ts>) {
+  return {
+    run: async function customAssert(callMethod?: (...generatedValues: Ts) => Promise<string>) {
+      const out = await fc.check(property, params);
+
+      if (!out.failed) return;
+
+      const genericErrorMessage = fc_formatRunDetails(out);
+      if (!callMethod || out.counterexample == null) throw new Error(genericErrorMessage);
+
+      throw new Error(`${genericErrorMessage}\n\n${await callMethod(...out.counterexample)}`);
+    }
+  };
+}
+export async function withCustomAssert<Ts extends any[]>(
+  run: Promise<RunDetails<Ts>>,
+  callMethod: (...generatedValues: Ts) => Promise<string>
+) {
+  const out = await run;
+  if (!out.failed) return;
+
+  const genericErrorMessage = fc_formatRunDetails(out);
+  if (out.counterexample == null) throw new Error(genericErrorMessage);
+
+  throw new Error(`${genericErrorMessage}\n\n${await callMethod(...out.counterexample)}`);
+}
+export async function withCustomAssertB<Ts extends any[]>(
+  run: Promise<RunDetails<Ts>>,
+  config: {
+    onRunInterrupted: (...generatedValues: Ts) => Promise<string>;
+    onRunFailed: (...generatedValues: Ts) => Promise<string>;
+    onRunTooManySkip: (...generatedValues: Ts) => Promise<string>;
+  }
+) {
+  const out = await run;
+  if (!out.failed) return;
+
+  const genericErrorMessage = fc_formatRunDetails(out);
+  if (out.counterexample == null) throw new Error(genericErrorMessage);
+
+  throw new Error(`${genericErrorMessage}\n\n${await config.onRunInterrupted(...out.counterexample)}`);
+}
